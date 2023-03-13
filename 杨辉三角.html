@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>杨辉三角</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .top {
+            height: 50px;
+        }
+
+        .triangle-container {
+            width: 100%;
+            height: calc(100% - 50px);
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .triangle-row{
+            display: flex;
+        }
+
+        .triangle-container .hexagon {
+            width: 30px;
+            height: 52px;
+            background-color: #66ffff;
+            position: relative;
+            margin: 0 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform: rotate(30deg);
+        }
+
+        .triangle-container .hexagon:before {
+            content: "";
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 0;
+            left: -15px;
+            border-top: 26px solid transparent;
+            border-bottom: 26px solid transparent;
+            border-right: 15px #66ffff solid;
+            border-left: none;
+        }
+
+        .triangle-container .hexagon:after {
+            content: "";
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 0;
+            left: 30px;
+            border-top: 26px solid transparent;
+            border-bottom: 26px solid transparent;
+            border-right: none;
+            border-left: 15px #66ffff solid;
+        }
+
+    </style>
+</head>
+<body>
+<div class="top">
+    <label for="num">
+        请输入要生成
+        <input type="number"   id="num">
+        行的三角形
+    </label>
+
+    <button onclick="confirm()">生成</button>
+</div>
+
+<div class="triangle-container" id="triangle-container">
+
+</div>
+
+
+
+<script>
+
+  const generate = (numRows) => {
+    let res = [[1]]
+    for (let i = 1; i < numRows; i++) {
+      res[i] = []
+      for (let j = 0; j < i + 1; j++) {
+        res[i][j] = (res[i - 1][j] || 0) + (res[i - 1][j - 1] || 0);
+      }
+    }
+    return res
+  }
+
+
+  function confirm() {
+    document.getElementById('triangle-container').innerHTML = ''
+    const value = document.getElementById('num').value
+    const data = generate(value)
+    for (let i = 0; i < data.length; i++) {
+      const row = document.createElement('div')
+      row.setAttribute('class', 'triangle-row')
+      for (let j = 0; j < data[i].length; j++) {
+        const hexagon = document.createElement('div')
+        hexagon.setAttribute('class', 'hexagon')
+        hexagon.innerHTML = `${data[i][j]}`
+        row.appendChild(hexagon)
+      }
+      document.getElementById('triangle-container').appendChild(row)
+    }
+  }
+
+
+</script>
+
+</body>
+</html>
