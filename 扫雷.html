@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>扫雷</title>
+    <style>
+        #scene{
+            width: 270px;
+            height: 270px;
+            box-sizing: content-box;
+            position: relative;
+            margin: 200px auto;
+            border: 5px solid #ccc;
+        }
+        .tube{
+            width: 30px;
+            height: 30px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            position: absolute;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 6px;
+            background: #ffd3d3;
+            box-shadow:0px 0px 2px #000;
+        }
+        .clicked{
+            width: 30px;
+            height: 30px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            position: absolute;
+            text-align: center;
+            line-height: 30px;
+        }
+        .tube:hover{
+            background: #afe0f9;
+        }
+        .mine{
+            /* border-color: red; */
+        }
+        .cart{
+            display: inline-block;
+            width: 0;
+            height: 0;
+            border: 5px solid red;
+            border-top-width: 0px;
+            border-left-color: transparent;
+            border-right-color: transparent;
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="scene">
+            <template v-for="line in tubes">
+                <div 
+                    v-for="tube in line" 
+                    :style="{left: tube.point.y * 30 + 'px',top: tube.point.x * 30 + 'px'}" 
+                    :class="{ mine: tube.mine, tube: !tube.show, clicked: tube.show }"
+                    :key="tube.id"
+                    @contextmenu.prevent="setItMine(tube)"
+                    @click="dig(tube)">
+                    <span v-if="tube.show && tube.number != 0" :style="{color: numberColor[tube.number]}">
+                        {{tube.number}}
+                    </span>
+                    <span v-else-if="tube.flaged" class="cart"></span>
+                </div>
+            </template>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+        // 尺寸
+        const X = 9;
+        const Y = 9;
+        // 雷的总个数
+        const MINE = 10;
+        // 坐标点
+        class Point{
+            constructor(x, y){
+                this.x = x;
+                this.y = y;
+                this.id = '' + x + y;
+            }
+        }
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    tubes: [],
+                    numberColor: {
+                        '1': '#4050be',
+                        '2': '#518948',
+                        '3': '#ff254a',
+                        '4': '#010182',
+                        '5': 'ffb04a',
+                        '6': '#82b53c',
+                        '7': '#83543c',
+                        '8': '#83ffd7'
+                    },
+                    // 未排除的地雷个数
+                    restMine: MINE,
+                    // 可插旗数量
+                    flag: MINE,
+                    restTubes: 0
+                }
+            },
+            methods: {
+                // 初始化tubes
+                init(){
+                    this.flag = MINE;
+                    this.restTubes = X * Y;
+                    for (let i = 0; i < X; i++) {
+                        this.tubes[i] = [];
+                        for (let j = 0; j < Y; j++) {
+                            this.tubes[i].push({
+                                point: new Point(i, j),
+                                // 是否已经显示
+                                show: false,
+                                // 是否是地雷
+                                mine: false
+                            });
+                        }
+                    }
+                },
+                // 随机布置地雷
+                initScene(mineNumber){
+                    let _this = this;
+                    // 当前未布置的地雷数
+                    let currentMineNumber = mineNumber || MINE;
+                    // 没雷的坐标
+                    let emptyPoint = [];
+                    for(let i = 0; i < X; i++){
+                        for(let j = 0; j < Y; j++){
+                            if(!this.tubes[i][j].mine){
+                                emptyPoint.push({
+                                    x: _this.tubes[i][j].point.x,
+                                    y: _this.tubes[i][j].point.y
+                                });
+                            }
+                        }
+                    }
+                    // 随机获取一个没雷的坐标设置雷
+                    let index = Math.floor(Math.random() * emptyPoint.length);
+                    let x = emptyPoint[index].x;
+                    let y = emptyPoint[index].y;
+                    this.tubes[x][y].mine = true;
+                    // 未布置的地雷-1
+                    currentMineNumber--;
+                    // 剩余未布置的地雷不为0,递归调用,继续随机布置地雷
+                    if(currentMineNumber != 0){
+                        this.initScene(currentMineNumber);
+                    }
+                },
+                // 填入数字
+                fillNumber(){
+                    for(let i = 0; i < X; i++){
+                        for(let j = 0; j < Y; j++){
+                            // 非地雷才需填入数字
+                            if(!this.tubes[i][j].mine){
+                                // 判断周围8个方块里地雷个数
+                                this.tubes[i][j].number = this.getNumber(i, j);
+                            }
+                        }
+                    }
+                },
+                // 游戏开始
+                gameStart(){
+                    this.init();
+                    this.initScene();
+                    this.fillNumber();
+                },
+                // 坐标是否超出界外
+                inRange(x, y){
+                    return x < X && x >= 0 && y < Y && y >= 0;
+                },
+                // 获取当前方块的值
+                getNumber(x, y){
+                    let number = 0;
+                    // 左上
+                    if(this.inRange(x - 1, y - 1)){
+                        if(this.tubes[x-1][y-1].mine){
+                            number++;
+                        }
+                    }
+                    // 上
+                    if(this.inRange(x - 1, y)){
+                        if(this.tubes[x-1][y].mine){
+                            number++;
+                        }
+                    }
+                    // 右上
+                    if(this.inRange(x - 1, y + 1)){
+                        if(this.tubes[x-1][y+1].mine){
+                            number++;
+                        }
+                    }
+                    // 左
+                    if(this.inRange(x, y - 1)){
+                        if(this.tubes[x][y-1].mine){
+                            number++;
+                        }
+                    }
+                    // 右
+                    if(this.inRange(x, y + 1)){
+                        if(this.tubes[x][y+1].mine){
+                            number++;
+                        }
+                    }
+                    // 左下
+                    if(this.inRange(x + 1, y - 1)){
+                        if(this.tubes[x+1][y-1].mine){
+                            number++;
+                        }
+                    }
+                    // 下
+                    if(this.inRange(x + 1, y)){
+                        if(this.tubes[x+1][y].mine){
+                            number++;
+                        }
+                    }
+                    // 右下
+                    if(this.inRange(x + 1, y + 1)){
+                        if(this.tubes[x+1][y+1].mine){
+                            number++;
+                        }
+                    }
+                    return number;
+                },
+                // 右键设成地雷
+                setItMine(tube){
+                    // 未显示的方块才能插旗
+                    if(!tube.show){
+                        tube.flaged = !tube.flaged;
+                    }
+                    // 如果插上了旗
+                    if(tube.flaged){
+                        // 可插的旗-1
+                        this.flag--;
+                        // 如果这个方块有地雷,剩余的地雷-1
+                        if(tube.mine){
+                            this.restMine--;
+                        }
+                    }
+                    // 如果取消了插旗
+                    else{
+                        // 可插的旗+1
+                        this.flag++;
+                        // 如果这个方块有地雷,剩余的地雷+1
+                        if(tube.mine){
+                            this.restMine++;
+                        }
+                    }
+                    this.tubes.splice(0,0);
+                    if (this.gameComplte()) {
+                        alert('恭喜你通关!!');
+                        this.gameStart();
+                        this.tubes.splice(0, 0);
+                    }
+                },
+                // 点击方块
+                dig(tube){
+                    if(!tube.show && !(typeof tube.flaged === 'boolean' && tube.flaged)){
+                        // 点到地雷,游戏结束;后续做效果及判断重开
+                        if(tube.mine){
+                            alert('游戏结束');
+                            this.gameStart();
+                            this.tubes.splice(0, 0);
+                            return;
+                        }
+                        else if(tube.number != 0){
+                            this.clickTube(tube.point.x, tube.point.y);
+                        }
+                        else if(tube.number == 0){
+                            this.clickTube(tube.point.x, tube.point.y);
+                            if(this.inRange(tube.point.x - 1, tube.point.y - 1)){
+                                this.dig(this.tubes[tube.point.x - 1][tube.point.y - 1]);
+                            }
+                            if(this.inRange(tube.point.x - 1, tube.point.y)){
+                                this.dig(this.tubes[tube.point.x - 1][tube.point.y]);
+                            }
+                            if(this.inRange(tube.point.x - 1, tube.point.y + 1)){
+                                this.dig(this.tubes[tube.point.x - 1][tube.point.y + 1]);
+                            }
+                            if(this.inRange(tube.point.x, tube.point.y - 1)){
+                                this.dig(this.tubes[tube.point.x][tube.point.y - 1]);
+                            }
+                            if(this.inRange(tube.point.x, tube.point.y + 1)){
+                                this.dig(this.tubes[tube.point.x][tube.point.y + 1]);
+                            }
+                            if(this.inRange(tube.point.x + 1, tube.point.y - 1)){
+                                this.dig(this.tubes[tube.point.x + 1][tube.point.y - 1]);
+                            }
+                            if(this.inRange(tube.point.x + 1, tube.point.y)){
+                                this.dig(this.tubes[tube.point.x + 1][tube.point.y]);
+                            }
+                            if(this.inRange(tube.point.x + 1, tube.point.y + 1)){
+                                this.dig(this.tubes[tube.point.x + 1][tube.point.y + 1]);
+                            }
+                        }
+                    }
+                    if(this.gameComplete()){
+                        alert('恭喜你通关!!');
+                        this.gameStart();
+                        this.tubes.splice(0, 0);
+                    }
+                },
+                // 单个方块处理
+                clickTube(x, y){
+                    // this.$set(this.tubes[x][y], 'show', true);
+                    this.tubes[x][y].show = true;
+                    // 剩余方块-1
+                    this.restTubes--;
+                    // 激活view层更新
+                    this.tubes.splice(0, 0);
+                },             
+                // 游戏完成
+                gameComplete(){
+                    return (this.restMine == 0 && this.flag == 0) || this.restTubes == MINE;
+                }
+            },
+            created(){
+                this.gameStart();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>倒计时时钟翻转动画</title>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #clock {
+            width: 1300px;
+            height: 200px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            text-align: center;
+        }
+
+        .time {
+            position: absolute;
+            top: 120px;
+            left: 0;
+            right: 0;
+            margin: auto;
+            width: 500px;
+            height: 100px;
+            text-align: center;
+        }
+
+        #input {
+            width: 80%;
+            padding: 12px 20px;
+            margin: 8px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            outline: none;
+        }
+
+        #btn {
+            background-color: #141414;
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 16px;
+            border: none;
+            outline: none;
+        }
+
+        #btn[disabled]{
+            background-color:rgba(20, 20, 20, .5);
+            cursor: not-allowed;
+        }
+
+        .num {
+            width: 140px;
+            height: 200px;
+            font: 140px 'Roboto Slab', sans-serif;
+            color: #404040;
+            background: rgba(90, 90, 90, 1);
+            border: solid 3px #404040;
+            box-sizing: border-box;
+            border-radius: 18px;
+        }
+
+        .colon {
+            padding-bottom: 25px;
+            font: 140px 'Roboto Slab', sans-serif;
+            color: #404040;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="time">
+        <input type="text" id="input" placeholder="请输入到期时间(Unix时间戳)" value="">
+        <button type="button" id="btn" onclick="Start()">开始</button>
+    </div>
+
+    <div class="container">
+
+        <div id="clock">
+            <div id="d10" class="num">
+            </div>
+
+            <div id="d0" class="num">
+            </div>
+
+            <div class="colon">:</div>
+
+            <div id="h10" class="num">
+            </div>
+
+            <div id="h0" class="num">
+            </div>
+
+            <div class="colon">:</div>
+
+            <div id="m10" class="num">
+            </div>
+
+            <div id="m0" class="num">
+            </div>
+
+            <div class="colon">:</div>
+
+            <div id="s10" class="num">
+            </div>
+
+            <div id="s0" class="num">
+            </div>
+        </div>
+    </div>
+    <script>
+        function Start() {
+            var val = document.getElementById('input').value;
+            var timestamp = Math.round(new Date().getTime() / 1000);
+            if (!val) {
+                alert('您输入的时间戳为空！')
+            } else if (val < timestamp) {
+                alert('您输入的时间戳小于当前时间！');
+                document.getElementById('input').value = null;
+            } else {
+                document.getElementById('btn').disabled = true;
+                var countDownTime = val - timestamp;
+                var downTime = setInterval(function () {
+                    countDownTime = countDownTime - 1;
+                    if (countDownTime <= 0) {
+                        clearInterval(downTime);
+                        alert('倒计时时间到！');
+                        document.getElementById('input').value = null;
+                        countDownTime = null;
+                        document.getElementById('btn').disabled = false;
+                    }
+                    day = Math.floor(countDownTime / (60 * 60 * 24));
+                    day = ('0' + day).slice(-2);
+                    hour = Math.floor(countDownTime % (60 * 60 * 24) / (60 * 60));
+                    hour = ('0' + hour).slice(-2);
+                    minutes = Math.floor(countDownTime % (60 * 60) / 60);
+                    minutes = ('0' + minutes).slice(-2);
+                    second = Math.floor(countDownTime % 60);
+                    second = ('0' + second).slice(-2);
+                    d10.innerHTML = day.charAt(0);
+                    d0.innerHTML = day.charAt(1);
+                    h10.innerHTML = hour.charAt(0);
+                    h0.innerHTML = hour.charAt(1);
+                    m10.innerHTML = minutes.charAt(0);
+                    m0.innerHTML = minutes.charAt(1);
+                    s10.innerHTML = second.charAt(0);
+                    s0.innerHTML = second.charAt(1);
+                }, 1000)
+            }
+        }
+    </script>
+</body>
+
+</html>
